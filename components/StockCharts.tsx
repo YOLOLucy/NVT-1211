@@ -86,7 +86,7 @@ const GrowthIndicator: React.FC<{ value: number; isCurrency?: boolean; isPercent
   return (
     <div className={`flex items-center justify-end gap-1 ${colorClass}`}>
       <Icon size={14} strokeWidth={2.5} />
-      <span>
+      <span className="font-mono">
         {isCurrency 
             ? formatCurrency(Math.abs(value)) 
             : Math.abs(value).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
@@ -253,13 +253,10 @@ export const StockCharts: React.FC<ChartProps> = ({ data, monthlyData }) => {
   }, [monthlyData]);
 
   // Current Month Table Data Logic
-  const { tableData, monthLabel } = useMemo(() => {
-    if (data.length === 0) return { tableData: [], monthLabel: '' };
+  const { tableData, monthLabel, totalValueChange, totalIndexChange } = useMemo(() => {
+    if (data.length === 0) return { tableData: [], monthLabel: '', totalValueChange: 0, totalIndexChange: 0 };
     
-    // Find the very last available date in the dataset (ignoring filter for the table usually, or should table reflect filter?)
-    // Requirement says "Current Month Details", implying the actual current month of the dataset, regardless of chart view.
-    // We will keep it as the dataset's latest month.
-    
+    // Find the very last available date in the dataset
     const lastPoint = data[data.length - 1];
     const targetDate = lastPoint.dateObj;
     const targetMonth = targetDate.getMonth();
@@ -301,10 +298,16 @@ export const StockCharts: React.FC<ChartProps> = ({ data, monthlyData }) => {
         };
     });
 
+    // Calculate totals
+    const totalValueChange = augmentedData.reduce((acc, curr) => acc + curr.valueChange, 0);
+    const totalIndexChange = augmentedData.reduce((acc, curr) => acc + curr.indexChange, 0);
+
     // Sort descending by date (newest first)
     return { 
         tableData: augmentedData.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime()), 
-        monthLabel 
+        monthLabel,
+        totalValueChange,
+        totalIndexChange
     };
   }, [data]);
 
@@ -494,10 +497,29 @@ export const StockCharts: React.FC<ChartProps> = ({ data, monthlyData }) => {
 
       {/* Current Month Details Table */}
       <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800 shadow-sm backdrop-blur-sm">
-         <h2 className="text-xl font-light text-white mb-6 flex items-center gap-2">
-          <span className="w-1 h-6 bg-indigo-500 rounded-full"></span>
-          Current Month Details <span className="text-zinc-500 font-normal ml-2">({monthLabel})</span>
-        </h2>
+         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <h2 className="text-xl font-light text-white flex items-center gap-2">
+              <span className="w-1 h-6 bg-indigo-500 rounded-full"></span>
+              Current Month Details <span className="text-zinc-500 font-normal ml-2">({monthLabel})</span>
+            </h2>
+            
+            {/* Display Totals */}
+            {tableData.length > 0 && (
+                <div className="flex items-center gap-6 bg-zinc-900/50 px-4 py-2 rounded-lg border border-zinc-800/50 self-start md:self-auto">
+                    <div className="flex items-center gap-3">
+                        <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Total Change</span>
+                        <GrowthIndicator value={totalValueChange} isCurrency={true} />
+                    </div>
+                    {hasIndexData && (
+                        <div className="flex items-center gap-3 pl-6 border-l border-zinc-800">
+                            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Total Index</span>
+                            <GrowthIndicator value={totalIndexChange} isCurrency={false} />
+                        </div>
+                    )}
+                </div>
+            )}
+         </div>
+         
         <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>

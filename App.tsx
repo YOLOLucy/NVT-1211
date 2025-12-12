@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { parseCSV, calculateMonthlyGrowth, formatCurrency } from './utils';
 import { StockCharts } from './components/StockCharts';
-import { ChatBot } from './components/ChatBot';
 import { StockDataPoint, MonthlyGrowth } from './types';
-import { TrendingUp, DollarSign, Calendar, MessageSquareText, Upload } from 'lucide-react';
+import { TrendingUp, DollarSign, Calendar, Upload } from 'lucide-react';
 import { RAW_CSV_DATA } from './constants';
 
 const App: React.FC = () => {
   const [csvContent, setCsvContent] = useState<string>(RAW_CSV_DATA);
   const [stockData, setStockData] = useState<StockDataPoint[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyGrowth[]>([]);
-  const [isChatOpen, setIsChatOpen] = useState(false); // Default closed on mobile, logic handled below
 
   // Initialize Data
   useEffect(() => {
@@ -18,12 +16,6 @@ const App: React.FC = () => {
     const monthly = calculateMonthlyGrowth(data);
     setStockData(data);
     setMonthlyData(monthly);
-    
-    // Auto-open chat on desktop only on initial load (optional check could be added here to prevent re-opening on upload)
-    // For simplicity, we keep the original behavior but could add a ref to track if init happened.
-    if (window.innerWidth >= 768 && stockData.length === 0) {
-        setIsChatOpen(true);
-    }
   }, [csvContent]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,14 +71,6 @@ const App: React.FC = () => {
                     <span className="hidden sm:inline">Upload CSV</span>
                     <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
                 </label>
-
-                <button 
-                    onClick={() => setIsChatOpen(!isChatOpen)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${isChatOpen ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
-                >
-                    <MessageSquareText size={18} />
-                    <span className="hidden sm:inline">{isChatOpen ? 'Hide Assistant' : 'Ask AI Assistant'}</span>
-                </button>
             </div>
         </header>
 
@@ -178,16 +162,6 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {/* Chat Sidebar / Overlay */}
-      {isChatOpen && (
-        <ChatBot 
-            stockContext={stockData} 
-            monthlyContext={monthlyData} 
-            isOpen={isChatOpen} 
-            onClose={() => setIsChatOpen(false)} 
-        />
-      )}
     </div>
   );
 };
